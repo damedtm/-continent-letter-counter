@@ -1,7 +1,6 @@
 #Program to calculate the most recurring word in the countries of a continent.
-#url: https://www.countries-ofthe-world.com/
+#url: https://en.wikipedia.org/wiki/
 
-import webbrowser
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
@@ -20,8 +19,8 @@ def get_browser_headers():
         'Sec-Fetch-Site': 'none',
         'Cache-Control': 'max-age=0',
     }
-anchorAddress = 'https://www.countries-ofthe-world.com/countries-of-'
-tailAddress = '.html'
+anchorAddress = 'https://en.wikipedia.org/wiki/'
+
 
 continentsList =[ 'asia', 'europe', 'africa', 'north america',  
                  'south america', 'australia', 'oceania',  
@@ -35,12 +34,12 @@ emptyContainer = 0
 print('Enter any continent to find out the most recurring letter in its names of its countries')
 userContinent = input()
 normalizedContinent = userContinent.lower()
-urlHalfList = [normalizedContinent, tailAddress]
+
 
 if (len(normalizedContinent) > 1) and normalizedContinent in continentsList:  
     headers = get_browser_headers()
 
-    webAddress = anchorAddress + ''. join(urlHalfList)
+    webAddress = anchorAddress + ''. join(normalizedContinent)
     res = requests.get(webAddress, headers = headers)
     print(res.status_code)
     soup = BeautifulSoup(res.text, 'lxml')
