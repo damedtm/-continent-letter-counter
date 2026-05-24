@@ -55,7 +55,7 @@ if  normalizedUserContinent in continentsList:
                 countriesListNormalized.append(li.find('a').get_text().replace(" ",""))
                 countriesList.append(li.find('a').get_text())
     
-    countriesNormalizedandJoined = "".join(countriesListNormalized)
+    countriesNormalizedandJoined = "".join(countriesListNormalized).lower()
     count = Counter(countriesNormalizedandJoined)
     letter = count.most_common(1)
     topLetter, topCount = count.most_common(1)[0]
