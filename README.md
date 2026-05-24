@@ -17,6 +17,6 @@ The problems I ran into were as follows:
 This project built on my knowledge of importing python modules for functionality as well as helping me in adopting a core principle of programming and applying it to my code, the principle in question being abstraction.
 
 I used BeautifulSoup as the parsing library and lxml as the underlying parser. 
-I used Counter from the module Collections to iterate over the elements of a list, which I derived from from parsing the website's source code. In order to find the most recurring letter within its elements.
+I used Counter from the module Collections to iterate over the elements of a list, the list which was derived from parsing the website's source code. In order to find the most recurring letter within its elements.
 
 I hope you enjoy going through my work as much as I did building it.
