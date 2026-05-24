@@ -23,12 +23,17 @@ args = "Start application"
 name = "Start application"
 author = "agent"
 
+[workflows.workflow.metadata]
+outputType = "webview"
+
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python 'continent word counter.py'"
-
-[workflows.workflow.metadata]
-outputType = "console"
+args = "python app.py"
+waitForPort = 5000
 
 [deployment]
 deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
