@@ -3,6 +3,9 @@ import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from collections import Counter
+import os
+import psycopg2
+from psycopg2 import sql
 
 app = Flask(__name__)
 
@@ -16,6 +19,70 @@ CONTINENTS_LIST = [
 
 ANTARCTICA_LETTER = 'a'
 ANTARCTICA_COUNT = 4
+
+
+def get_db():
+    url = os.environ.get('DATABASE_URL')
+    if not url:
+        return None
+    try:
+        conn = psycopg2.connect(url)
+        return conn
+    except Exception:
+        return None
+
+
+def init_db():
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS stats (
+                    id SERIAL PRIMARY KEY,
+                    total_searches INTEGER DEFAULT 0
+                );
+                INSERT INTO stats (id, total_searches)
+                SELECT 1, 0
+                WHERE NOT EXISTS (SELECT 1 FROM stats WHERE id = 1);
+            """)
+            conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
+
+
+def get_search_count():
+    conn = get_db()
+    if not conn:
+        return None
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT total_searches FROM stats WHERE id = 1;")
+            row = cur.fetchone()
+            return row[0] if row else 0
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+
+def increment_search_count():
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                UPDATE stats SET total_searches = total_searches + 1 WHERE id = 1;
+            """)
+            conn.commit()
+    except Exception:
+        pass
+    finally:
+        conn.close()
 
 
 def get_browser_headers():
@@ -84,12 +151,15 @@ def index():
     error = None
     continent = ''
     countries = []
+    search_count = get_search_count()
 
     if request.method == 'POST':
         continent = request.form.get('continent', '').strip()
         if continent:
             top_letter, top_count, countries, error = get_top_letter(continent)
             if not error:
+                increment_search_count()
+                search_count = get_search_count()
                 result = {
                     'letter': top_letter,
                     'count': top_count,
@@ -97,8 +167,10 @@ def index():
                     'nat_geo_url': NAT_GEO_ADDRESS,
                 }
 
-    return render_template('index.html', result=result, error=error, continent=continent, countries=countries)
+    return render_template('index.html', result=result, error=error, continent=continent, countries=countries, search_count=search_count)
 
+
+init_db()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

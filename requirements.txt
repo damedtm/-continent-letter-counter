@@ -4,3 +4,4 @@ lxml
 fake-useragent
 flask
 gunicorn
+psycopg2-binary
