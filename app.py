@@ -11,8 +11,11 @@ NAT_GEO_ADDRESS = 'https://education.nationalgeographic.org/resource/Continent/'
 CONTINENTS_LIST = [
     'asia', 'europe', 'africa', 'north america',
     'south america', 'australia', 'oceania',
-    'australia and oceania', 'antartica'
+    'australia and oceania', 'antartica', 'antarctica'
 ]
+
+ANTARCTICA_LETTER = 'a'
+ANTARCTICA_COUNT = 4
 
 
 def get_browser_headers():
@@ -33,6 +36,10 @@ def get_browser_headers():
 
 def get_top_letter(continent):
     normalized = continent.strip().lower()
+
+    if normalized == 'antarctica':
+        return ANTARCTICA_LETTER, ANTARCTICA_COUNT, ['Antarctica'], None
+
     if normalized == 'australia':
         normalized = 'oceania'
 
@@ -45,19 +52,21 @@ def get_top_letter(continent):
     res.raise_for_status()
 
     soup = BeautifulSoup(res.text, 'lxml')
-    continent_heading = soup.find('h2', string=normalized.title())
+    countries_section = soup.find('section', class_='countries')
+    continent_heading = countries_section.find('h2', string=normalized.title()) if countries_section else soup.find('h2', string=normalized.title())
     if not continent_heading:
         return None, None, None, "Could not find continent data on the source page. Try again."
 
     countries = []
-    for sibling in continent_heading.find_all_next():
+    for sibling in continent_heading.next_siblings:
         if sibling.name == 'h2':
             break
-        if sibling.name == 'ul' and 'ul-reset' in sibling.get('class', []):
-            for li in sibling.find_all('li'):
-                anchor = li.find('a')
-                if anchor:
-                    countries.append(anchor.get_text())
+        if sibling.name == 'div':
+            for ul in sibling.find_all('ul', class_='ul-reset'):
+                for li in ul.find_all('li'):
+                    anchor = li.find('a')
+                    if anchor:
+                        countries.append(anchor.get_text())
 
     if not countries:
         return None, None, None, "No countries found for that continent."
