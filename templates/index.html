@@ -42,15 +42,39 @@
       margin-bottom: 1rem;
     }
 
-    .counter-badge {
-      display: inline-block;
-      background: rgba(96, 165, 250, 0.12);
-      border: 1px solid rgba(96, 165, 250, 0.2);
-      color: #93c5fd;
-      font-size: 0.78rem;
-      padding: 0.3rem 0.8rem;
-      border-radius: 999px;
-      margin-bottom: 1.4rem;
+    .counter-stat {
+      margin-bottom: 1.6rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      flex-shrink: 0;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); }
+      50% { opacity: 0.85; box-shadow: 0 0 0 5px rgba(34, 197, 94, 0); }
+    }
+
+    .counter-text .counter-number {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      display: inline;
+    }
+
+    .counter-text .counter-label {
+      font-size: 0.82rem;
+      color: #6b7280;
+      margin-top: 0.1rem;
     }
 
     .form-group {
@@ -187,11 +211,20 @@
 </head>
 <body>
   <div class="card">
-    <h1>🌍 Continent Letter Counter</h1>
+    <h1>Continent Letter Counter</h1>
     <p class="subtitle">Find the most recurring letter across country names in any continent.</p>
 
     {% if search_count is not none %}
-    <div class="counter-badge">🔍 {{ "{:,}".format(search_count) }} searches made</div>
+    <div class="counter-stat">
+      <div class="live-dot"></div>
+      <div class="counter-text">
+        <div>
+          <span class="counter-number" data-target="{{ search_count }}">0</span>
+          <span class="counter-number"> curious minds and counting</span>
+        </div>
+        <div class="counter-label">have put geography to the test</div>
+      </div>
+    </div>
     {% endif %}
 
     <form method="POST" onsubmit="this.classList.add('submitting')">
@@ -238,5 +271,38 @@
       {% endif %}
     {% endif %}
   </div>
+  <script>
+    const el = document.querySelector('.counter-number[data-target]');
+    if (el) {
+      const target = parseInt(el.getAttribute('data-target'), 10);
+      if (target === 0) {
+        el.textContent = '0';
+      } else {
+        const duration = 1400;
+        const start = performance.now();
+        const easeOut = t => 1 - Math.pow(1 - t, 3);
+        function update(now) {
+          const progress = Math.min((now - start) / duration, 1);
+          el.textContent = Math.floor(easeOut(progress) * target).toLocaleString();
+          if (progress < 1) requestAnimationFrame(update);
+          else el.textContent = target.toLocaleString();
+        }
+        requestAnimationFrame(update);
+      }
+    }
+
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+      if (!localStorage.getItem('clc_counted')) {
+        e.preventDefault();
+        fetch('/count', { method: 'POST' })
+          .then(() => {
+            localStorage.setItem('clc_counted', '1');
+            form.submit();
+          })
+          .catch(() => form.submit());
+      }
+    });
+  </script>
 </body>
 </html>
