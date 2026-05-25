@@ -1,15 +1,67 @@
-This program solves a simple question I had pondered, 'What is the most recurring letter in the countries of a continent'.
+# Continent Letter Counter
 
-I built this program because I was curious on Web Scraping, Python and Object Oriented Programming. The problems I ran into were as follows:
+This project started from a simple question I had wondered about for a while:
 
--My automated requests getting blocked by the website. Which in my attempt to work around strengthened my foundational understanding of headers, as well as network policies used by companies and the owners of websites.
+> What is the most recurring letter across the country names of a continent?
 
--Getting compressed parsed html that was unusable, which led me to use Identity as my accepted coding in my header.
+To answer it, I built a Flask web application that scrapes live geography data in real time instead of relying on a static database.
 
--Struggling to write code that could efficiently parse the particular section of the source code I required.
+---
 
-This project built on my knowledge of importing python modules for functionality as well as helping me in adopting a core principle of programming and applying it to my code, the principle in question being abstraction.
+## What I Learned
 
-I used BeautifulSoup as the parsing library and lxml as the underlying parser. I used Counter from the module Collections to iterate over the elements of my parsed list to find the most recurring worda list, which I derived from from parsing the website's source code. In order to find the most recurring letter within its elements.
+This project helped strengthen my understanding of:
 
-I hope you enjoy going through my work as much as I did building it.
+- Web scraping
+- HTTP request headers
+- HTML parsing
+- Python modules and abstraction
+- Backend deployment and database integration
+
+Some of the challenges I ran into included:
+
+- My automated requests getting blocked by the source website. Working around this taught me a lot about request headers and how websites detect automated traffic.
+
+- The site returning compressed HTML that interfered with parsing, which led me to force `Accept-Encoding: identity` in my request headers.
+
+- Writing parsing logic capable of efficiently locating and extracting the exact section of HTML I needed.
+
+---
+
+## Technologies Used
+
+- Python
+- Flask
+- BeautifulSoup
+- lxml
+- Neon PostgreSQL
+- Docker
+- Hugging Face Spaces
+
+I used `BeautifulSoup` with the `lxml` parser to extract country data from the source website. I then used Python’s `Counter` collection to determine the most recurring letter across the parsed country names.
+
+---
+
+## Features
+
+- Live scraping on every search
+- Visitor counter backed by Neon PostgreSQL
+- Animated count-up interaction
+- Pulsing live activity indicator
+- Responsive UI with custom copy and styling
+
+---
+
+## Deployment
+
+The application is deployed on Hugging Face Spaces using Docker.
+
+Development was primarily done in VS Code and Replit, which handled deployment configuration, environment secrets, and database integration.
+
+---
+
+## Live Demo
+
+Try it here:
+
+https://huggingface.co/spaces/damianohajunwa/continent-word-counter
