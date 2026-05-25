@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, jsonify
 import requests
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
@@ -8,6 +8,7 @@ import psycopg2
 from psycopg2 import sql
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
 
 ANCHOR_ADDRESS = 'https://ontheworldmap.com/countries/by-continents/#'
 NAT_GEO_ADDRESS = 'https://education.nationalgeographic.org/resource/Continent/'
@@ -43,9 +44,12 @@ def init_db():
                     id SERIAL PRIMARY KEY,
                     total_searches INTEGER DEFAULT 0
                 );
+
                 INSERT INTO stats (id, total_searches)
                 SELECT 1, 0
-                WHERE NOT EXISTS (SELECT 1 FROM stats WHERE id = 1);
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM stats WHERE id = 1
+                );
             """)
             conn.commit()
     except Exception:
@@ -57,14 +61,19 @@ def init_db():
 def get_search_count():
     conn = get_db()
     if not conn:
-        return None
+        return 0
+
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT total_searches FROM stats WHERE id = 1;")
+            cur.execute("""
+                SELECT total_searches
+                FROM stats
+                WHERE id = 1;
+            """)
             row = cur.fetchone()
             return row[0] if row else 0
     except Exception:
-        return None
+        return 0
     finally:
         conn.close()
 
@@ -73,10 +82,13 @@ def increment_search_count():
     conn = get_db()
     if not conn:
         return
+
     try:
         with conn.cursor() as cur:
             cur.execute("""
-                UPDATE stats SET total_searches = total_searches + 1 WHERE id = 1;
+                UPDATE stats
+                SET total_searches = total_searches + 1
+                WHERE id = 1;
             """)
             conn.commit()
     except Exception:
@@ -87,6 +99,7 @@ def increment_search_count():
 
 def get_browser_headers():
     ua = UserAgent()
+
     return {
         'User-Agent': ua.random,
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -111,27 +124,50 @@ def get_top_letter(continent):
         normalized = 'oceania'
 
     if normalized not in CONTINENTS_LIST:
-        return None, None, None, "Invalid continent. Please enter one of: Africa, Asia, Europe, North America, South America, Australia, Oceania, Antarctica."
+        return (
+            None,
+            None,
+            None,
+            "Invalid continent. Please enter one of: "
+            "Africa, Asia, Europe, North America, "
+            "South America, Australia, Oceania, Antarctica."
+        )
 
     headers = get_browser_headers()
     web_address = ANCHOR_ADDRESS + normalized.replace(' ', '-')
+
     res = requests.get(web_address, headers=headers, timeout=15)
     res.raise_for_status()
 
     soup = BeautifulSoup(res.text, 'lxml')
+
     countries_section = soup.find('section', class_='countries')
-    continent_heading = countries_section.find('h2', string=normalized.title()) if countries_section else soup.find('h2', string=normalized.title())
+
+    continent_heading = (
+        countries_section.find('h2', string=normalized.title())
+        if countries_section
+        else soup.find('h2', string=normalized.title())
+    )
+
     if not continent_heading:
-        return None, None, None, "Could not find continent data on the source page. Try again."
+        return (
+            None,
+            None,
+            None,
+            "Could not find continent data on the source page. Try again."
+        )
 
     countries = []
+
     for sibling in continent_heading.next_siblings:
         if sibling.name == 'h2':
             break
+
         if sibling.name == 'div':
             for ul in sibling.find_all('ul', class_='ul-reset'):
                 for li in ul.find_all('li'):
                     anchor = li.find('a')
+
                     if anchor:
                         countries.append(anchor.get_text())
 
@@ -139,10 +175,18 @@ def get_top_letter(continent):
         return None, None, None, "No countries found for that continent."
 
     joined = "".join(c.replace(" ", "") for c in countries).lower()
+
     count = Counter(joined)
+
     top_letter, top_count = count.most_common(1)[0]
 
     return top_letter, top_count, countries, None
+
+
+@app.route('/count', methods=['POST'])
+def count():
+    increment_search_count()
+    return jsonify({'ok': True})
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -151,15 +195,18 @@ def index():
     error = None
     continent = ''
     countries = []
+
     search_count = get_search_count()
 
     if request.method == 'POST':
         continent = request.form.get('continent', '').strip()
+
         if continent:
             top_letter, top_count, countries, error = get_top_letter(continent)
+
             if not error:
-                increment_search_count()
                 search_count = get_search_count()
+
                 result = {
                     'letter': top_letter,
                     'count': top_count,
@@ -167,7 +214,14 @@ def index():
                     'nat_geo_url': NAT_GEO_ADDRESS,
                 }
 
-    return render_template('index.html', result=result, error=error, continent=continent, countries=countries, search_count=search_count)
+    return render_template(
+        'index.html',
+        result=result,
+        error=error,
+        continent=continent,
+        countries=countries,
+        search_count=search_count
+    )
 
 
 init_db()
