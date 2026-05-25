@@ -59,14 +59,11 @@ if  normalizedUserContinent in continentsList:
     for sibling in continentHeading.next_siblings:
         if sibling.name == 'h2':
             break
-        if sibling.name == 'div':
-            for ul in sibling.find_all('ul', class_='ul-reset'):
-                for li in ul.find_all('li'):
-                    a = li.find('a')
-                    if a:
-                        countriesListNormalized.append(a.get_text().replace(" ", ""))
-                        countriesList.append(a.get_text())
-
+        if sibling.name == 'ul' and 'ul-reset' in sibling.get('class', []):
+            for li in sibling.find_all('li'):
+                countriesListNormalized.append(li.find('a').get_text().replace(" ",""))
+                countriesList.append(li.find('a').get_text())
+    
     countriesNormalizedandJoined = "".join(countriesListNormalized)
     count = Counter(countriesNormalizedandJoined)
     letter = count.most_common(1)
