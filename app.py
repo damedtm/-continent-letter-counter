@@ -22,7 +22,7 @@ ANTARCTICA_COUNT = 4
 
 
 def get_db():
-    url = os.environ.get('DATABASE_URL')
+    url = os.environ.get('NEON_DATABASE_URL')
     if not url:
         return None
     try:
